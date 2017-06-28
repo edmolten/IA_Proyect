@@ -12,7 +12,7 @@ char * last_char(char * string){
     return &string[strlen(string)-1];
 }
 
-struct everyone * parse_file(char * path){
+struct everyone * parse_file(const char * path){
     ifstream file;
     file.open(path);
     char word[6];
@@ -69,28 +69,53 @@ void print_all(struct everyone * mw){
     print_side(mw->w);
 }
 
+double get_pcent() {
+    return (double)rand() / (double)RAND_MAX ;
+}
+
+marriage * initial_solution(struct everyone * mw){
+    unsigned long size = mw->m->size();
+    set<int> indexes;
+    marriage * m = new marriage;
+    while(indexes.size() != size / 2){
+        double pcent = get_pcent();
+        int n = (int)(pcent * size);
+        indexes.insert(n);
+    }
+    for(set<int>::iterator ite = indexes.begin(); ite != indexes.end(); ite++){
+        int * pair = new int[2];
+        pair[M] = *ite;
+        pair[W] = *ite;
+        m->push_back(pair);
+    }
+    return m;
+}
 /*
 SA
 
  init:
- X = initial factible solution
+ X = initial solution
  tmax = max iterations
  q = initial temperature
  B = X (best solution)
  n = 0 number of solution
 
- if(no_posible_movement() || t == tmax){
-    return B;
+ if (t == max){
+    break;
  }
- random_movement
- get Nueva X
- calculate_delta
+ if(no_posible_movement(X)){
+    X = random
+ }
+ else{
+    nueva X = random_movement(X)
+ }
+ calculate_delta(X)
  if(is_better || random_acept){
     X = nueva X
  }
  else continue;
  if(is better){
-    B = X nueva
+    B = X
  }
  try_reduce_temperatue
  t = t+1
@@ -98,8 +123,10 @@ SA
 
  */
 int main() {
-
-
+    srand((unsigned)time(NULL));
+    const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart1\\instance_3.txt";
+    everyone * mw = parse_file(path);
+    initial_solution(mw);
     /*
     marriage* m= new marriage;
     int *pair1 = new int[2];
