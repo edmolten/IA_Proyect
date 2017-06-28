@@ -1,4 +1,4 @@
-# Install script for directory: /cygdrive/c/Users/eddox/CLionProjects/ia
+# Install script for directory: /cygdrive/c/Users/eddox/Documents/GitHub/IA_Proyect
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -35,5 +35,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/cygdrive/c/Users/eddox/CLionProjects/ia/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/cygdrive/c/Users/eddox/Documents/GitHub/IA_Proyect/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

@@ -10,4 +10,8 @@ typedef list<preference*> preference_list;
 typedef list<preference_list*> side;
 typedef list<int*> marriage;
 
+struct everyone {
+    side * m;
+    side * w;
+};
 #endif //IA_MAIN_H

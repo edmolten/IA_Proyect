@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/cygdrive/c/Users/eddox/CLionProjects/ia/main.cpp
+/cygdrive/c/Users/eddox/Documents/GitHub/IA_Proyect/main.cpp
 iostream
 -
 fstream
@@ -16,9 +16,9 @@ cstring
 cstdlib
 -
 main.h
-/cygdrive/c/Users/eddox/CLionProjects/ia/main.h
+/cygdrive/c/Users/eddox/Documents/GitHub/IA_Proyect/main.h
 
-/cygdrive/c/Users/eddox/CLionProjects/ia/main.h
+/cygdrive/c/Users/eddox/Documents/GitHub/IA_Proyect/main.h
 list
 -
 set
