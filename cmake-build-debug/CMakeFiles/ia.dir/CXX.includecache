@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/cygdrive/c/Users/eddox/CLionProjects/ia/main.cpp
+iostream
+-
+fstream
+-
+cstring
+-
+cstdlib
+-
+main.h
+/cygdrive/c/Users/eddox/CLionProjects/ia/main.h
+
+/cygdrive/c/Users/eddox/CLionProjects/ia/main.h
+list
+-
+set
+-
+
