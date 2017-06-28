@@ -164,8 +164,15 @@ marriage * get_blocking_pairs_of_married(int p, int p_match, marriage *marr, int
         }
 
     }
+    return blocking_pairs;
+
 }
 
+void add_to_list(marriage * l1, marriage * l2){
+    for(marriage::iterator it = l2->begin(); it != l2->end(); it++){
+        l1->push_back(*it);
+    }
+}
 marriage * get_all_blocking_pairs(marriage * marr, everyone * mw) {
     marriage *blocking_pairs = new marriage;
     set<int> *married_men = new set<int>;
@@ -175,10 +182,43 @@ marriage * get_all_blocking_pairs(marriage * marr, everyone * mw) {
         married_men->insert(m);
         int w = (*it)[W];
         married_women->insert(w);
-        get_blocking_pairs_of_married(m, w, marr, M, mw);
-        get_blocking_pairs_of_married(w, m, marr, W, mw);
+        add_to_list(blocking_pairs,get_blocking_pairs_of_married(m, w, marr, M, mw));
+        //add_to_list(blocking_pairs,get_blocking_pairs_of_married(w, m, marr, W, mw));
+
     }
+    return blocking_pairs;
 }
+
+marriage * copy_marriage(marriage * marr){
+    marriage * new_marriage = new marriage;
+    for(marriage::iterator it = marr->begin();it != marr->end();it++){
+        int * pair = new int[2];
+        pair[M] = (*it)[M];
+        pair[W] = (*it)[W];
+        new_marriage->push_back(pair);
+    }
+    return new_marriage;
+}
+
+marriage * random_movement(marriage * marr, everyone * mw){
+    marriage * blocking_pairs = get_all_blocking_pairs(marr,mw);
+    unsigned long size = blocking_pairs->size();
+    double pcent = get_pcent();
+    int rand_index = (int) (pcent * size);
+    int index = 0;
+    int * blocking_pair = new int[2];
+    for(marriage::iterator it = blocking_pairs->begin(); it != blocking_pairs->end(); it++){
+        if(index == rand_index){
+            blocking_pair[M] =  (*it)[M];
+            blocking_pair[W] =  (*it)[W];
+            break;
+        }
+        index++;
+    }
+    marriage * new_marriage = copy_marriage(marr);
+
+}
+
 /*
 SA
 
@@ -209,13 +249,45 @@ SA
  try_reduce_temperatue
  t = t+1
 
-
+ (15,15)
+ (59,59)
  */
+
+void print_marriage(marriage * marr){
+    for(marriage::iterator it = marr->begin();it != marr->end();it++){
+        cout<< "(" << (*it)[0] << " , " << (*it)[1] << ") " ;
+    }
+}
+
+void check_repetition(marriage * marr){
+    for(marriage::iterator it = marr->begin();it != marr->end();it++){
+        int i = 0;
+        int m1 = (*it)[M];
+        int w1 = (*it)[W];
+        for(marriage::iterator it2 = marr->begin();it2 != marr->end();it2++) {
+            int m2 = (*it2)[M];
+            int w2 = (*it2)[W];
+            if (m1 == m2 && w1 == w2){
+                i++;
+            }
+        }
+        cout<< i << " ";
+    }
+}
+
 int main() {
     srand((unsigned)time(NULL));
-    const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart1\\instance_3.txt";
+    const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\minitest";
     everyone * mw = parse_file(path);
-    initial_solution(mw);
+    marriage * marr = initial_solution(mw);
+    marriage * all_blocking_pairs = get_all_blocking_pairs(marr,mw);
+    cout << "Marriage: " << endl;
+    print_marriage(marr);
+    cout << endl << "Blocking pairs: " << endl;
+    print_marriage(all_blocking_pairs);
+    cout << endl << "Number of blocking pairs: " << all_blocking_pairs->size() << endl;
+    check_repetition(all_blocking_pairs);
+
     /*
     marriage* m= new marriage;
     int *pair1 = new int[2];
