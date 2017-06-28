@@ -165,7 +165,6 @@ marriage * get_blocking_pairs_of_married(int p, int p_match, marriage *marr, int
 
     }
     return blocking_pairs;
-
 }
 
 void add_to_list(marriage * l1, marriage * l2){
@@ -183,19 +182,21 @@ marriage * get_all_blocking_pairs(marriage * marr, everyone * mw) {
         int w = (*it)[W];
         married_women->insert(w);
         add_to_list(blocking_pairs,get_blocking_pairs_of_married(m, w, marr, M, mw));
-        //add_to_list(blocking_pairs,get_blocking_pairs_of_married(w, m, marr, W, mw));
-
     }
     return blocking_pairs;
 }
 
-marriage * copy_marriage(marriage * marr){
+marriage * copy_marriage_with_breakup(marriage * marr, int m, int w){
     marriage * new_marriage = new marriage;
     for(marriage::iterator it = marr->begin();it != marr->end();it++){
         int * pair = new int[2];
-        pair[M] = (*it)[M];
-        pair[W] = (*it)[W];
-        new_marriage->push_back(pair);
+        int new_m = (*it)[M];
+        int new_w = (*it)[W];
+        if(new_m != m && new_w != w){
+            pair[M] = new_m;
+            pair[W] = new_w;
+            new_marriage->push_back(pair);
+        }
     }
     return new_marriage;
 }
@@ -205,18 +206,25 @@ marriage * random_movement(marriage * marr, everyone * mw){
     unsigned long size = blocking_pairs->size();
     double pcent = get_pcent();
     int rand_index = (int) (pcent * size);
+    cout << "rand_index: " << rand_index << endl;
     int index = 0;
     int * blocking_pair = new int[2];
-    for(marriage::iterator it = blocking_pairs->begin(); it != blocking_pairs->end(); it++){
-        if(index == rand_index){
-            blocking_pair[M] =  (*it)[M];
-            blocking_pair[W] =  (*it)[W];
-            break;
+    int m ;
+    int w;
+    marriage * new_marriage;
+    for(marriage::iterator it = blocking_pairs->begin(); it != blocking_pairs->end(); it++) {
+        if (index == rand_index) {
+            m = (*it)[M];
+            w = (*it)[W];
+            blocking_pair[M] = m;
+            blocking_pair[W] = w;
+            new_marriage = copy_marriage_with_breakup(marr, m, w);
+            new_marriage->push_back(blocking_pair);
+            return new_marriage;
         }
         index++;
     }
-    marriage * new_marriage = copy_marriage(marr);
-
+    return NULL;
 }
 
 /*
@@ -287,6 +295,9 @@ int main() {
     print_marriage(all_blocking_pairs);
     cout << endl << "Number of blocking pairs: " << all_blocking_pairs->size() << endl;
     check_repetition(all_blocking_pairs);
+    marriage * new_marr = random_movement(marr,mw);
+    cout << "New marriage: " << endl;
+    print_marriage(new_marr);
 
     /*
     marriage* m= new marriage;
