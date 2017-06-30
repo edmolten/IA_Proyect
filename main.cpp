@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
+#include <climits>
 #include "main.h"
 
 using namespace std;
@@ -90,11 +91,39 @@ marriage * initial_solution(struct everyone * mw){
     return m;
 }
 
+set<int> * get_random_indexes(struct everyone *mw){
+    set<int> * indexes = new set<int>();
+    unsigned long size = mw->m->size();
+    while(indexes->size() != size / 2){
+        double pcent = get_pcent();
+        int n = (int)(pcent * size);
+        indexes->insert(n);
+    }
+    return  indexes;
+}
+
+marriage * initial_solution_2(struct everyone * mw){
+    set<int> * woman_indexes = get_random_indexes(mw);
+    set<int> * man_indexes = get_random_indexes(mw);
+    marriage * m = new marriage;
+    set<int>::iterator man_ite, woman_ite;
+    for(man_ite = man_indexes->begin(), woman_ite = woman_indexes->begin();
+            man_ite != man_indexes->end(), woman_ite != woman_indexes->end();
+            man_ite++, woman_ite++){
+        int * pair = new int[2];
+        pair[M] = *man_ite + 1;
+        pair[W] = *woman_ite + 1;
+        m->push_back(pair);
+    }
+    return m;
+
+}
+
 int * preference_values(int p, int match1, int match2, side * p_side){
     int i = 1;
     int * values = new int[2];
-    values[0] = -1;
-    values[1] = -1;
+    values[0] = INT_MAX;
+    values[1] = INT_MAX;
     bool done = false;
     for (side::iterator it_side = p_side->begin(); it_side != p_side->end(); it_side++){
         if(i == p){
@@ -107,7 +136,7 @@ int * preference_values(int p, int match1, int match2, side * p_side){
                     if(*it_pref == match2){
                         values[1] = pref_pos;
                     }
-                    if(values[0] != -1 & values[1] != -1){
+                    if(values[0] != INT_MAX & values[1] != INT_MAX){
                         done = true;
                         break;
                     }
@@ -126,13 +155,7 @@ int * preference_values(int p, int match1, int match2, side * p_side){
 
 bool is_blocking_pair(int m1, int w1, int m2, int w2, everyone * mw) {
     int *m_preferences = preference_values(m1, w1, w2, mw->m);
-    if (m_preferences[0] == -1 || m_preferences[1] == -1) {
-        return false;
-    }
     int *w_preferences = preference_values(w2, m1, m2, mw->w);
-    if (w_preferences[0] == -1 || w_preferences[1] == -1) {
-        return false;
-    }
     bool m1_prefers_w2 = m_preferences[0] > m_preferences[1];
     bool w2_prefers_m1 = w_preferences[0] < w_preferences[1];
     return (m1_prefers_w2 && w2_prefers_m1);
@@ -224,10 +247,6 @@ bool is_single_blocking_pair(int p, int p_match, int single, int p_gerder, every
         p_preferences = preference_values(p, p_match, single, mw->w);
         single_acepts_p = acepts(single,p,mw->m);
     }
-    if (p_preferences[0] == -1 || p_preferences[1] == -1) {
-        return false;
-    }
-
     bool p_prefers_single = p_preferences[0] > p_preferences[1];
     return p_prefers_single && single_acepts_p;
 }
@@ -274,11 +293,22 @@ void blocking_pairs_mix_singles(set<int> *single_men, set<int> *single_women, ev
     }
 }
 
+void print_single(set<int> *singles){
+    for(set<int>::iterator ite = singles->begin(); ite != singles->end(); ite++){
+        cout << *ite << " ";
+    }
+    cout << endl;
+}
+
 void blocking_pairs_from_singles(marriage *blocking_pairs, set<int> *married_men, set<int> *married_women,
                                  marriage *marr, everyone *mw) {
     unsigned long size = mw->m->size();
     set<int> * single_men = get_singles(married_men,size);
+    cout << "Single men: " << endl;
+    print_single(single_men);
     set<int> * single_women = get_singles(married_women,size);
+    cout << "Single women: " << endl;
+    print_single(single_women);
     blocking_pairs_one_side(single_men,marr,mw,blocking_pairs,M);
     blocking_pairs_one_side(single_women,marr,mw,blocking_pairs,W);
     blocking_pairs_mix_singles(single_men,single_women,mw,blocking_pairs);
@@ -289,7 +319,7 @@ marriage * get_all_blocking_pairs(marriage * marr, everyone * mw) {
     set<int> *married_men = new set<int>;
     set<int> *married_women = new set<int>;
     blocking_pairs_from_matchs(blocking_pairs, married_men, married_women, marr, mw);
-    //blocking_pairs_from_singles(blocking_pairs,married_men,married_women,marr,mw);
+    blocking_pairs_from_singles(blocking_pairs,married_men,married_women,marr,mw);
     if (blocking_pairs->size() > 0){
         return  blocking_pairs;
     } else {
@@ -297,7 +327,7 @@ marriage * get_all_blocking_pairs(marriage * marr, everyone * mw) {
     }
 }
 
-marriage * copy_marriage_with_breakup(marriage * marr, int m, int w){
+marriage * copy_marriage_with_breakups(marriage *marr, int m, int w){
     marriage * new_marriage = new marriage;
     for(marriage::iterator it = marr->begin();it != marr->end();it++){
         int * pair = new int[2];
@@ -312,8 +342,7 @@ marriage * copy_marriage_with_breakup(marriage * marr, int m, int w){
     return new_marriage;
 }
 
-marriage * random_movement(marriage * marr, everyone * mw){
-    marriage * blocking_pairs = get_all_blocking_pairs(marr,mw);
+marriage * random_movement(marriage * blocking_pairs, marriage * marr){
     if(blocking_pairs != NULL) {
         unsigned long size = blocking_pairs->size();
         double pcent = get_pcent();
@@ -329,15 +358,14 @@ marriage * random_movement(marriage * marr, everyone * mw){
                 w = (*it)[W];
                 blocking_pair[M] = m;
                 blocking_pair[W] = w;
-                new_marriage = copy_marriage_with_breakup(marr, m, w);
+                new_marriage = copy_marriage_with_breakups(marr, m, w);
                 new_marriage->push_back(blocking_pair);
                 return new_marriage;
             }
             index++;
         }
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 /*
@@ -375,9 +403,10 @@ SA
  */
 
 void print_marriage(marriage * marr){
-    for(marriage::iterator it = marr->begin();it != marr->end();it++){
-        cout<< "(" << (*it)[0] << " , " << (*it)[1] << ") " ;
+    for(marriage::iterator it = marr->begin();it != marr->end();it++) {
+        cout << "(" << (*it)[0] << " , " << (*it)[1] << ") ";
     }
+    cout << endl;
 }
 
 void check_repetition(marriage * marr){
@@ -400,21 +429,21 @@ int main() {
     srand((unsigned)time(NULL));
     const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\minitest2";
     everyone * mw = parse_file(path);
-    marriage * marr = initial_solution(mw);
+    marriage * marr = initial_solution_2(mw);
     cout << "Marriage: " << endl;
     print_marriage(marr);
     marriage * all_blocking_pairs = get_all_blocking_pairs(marr,mw);
     if(all_blocking_pairs != NULL){
-        cout << endl << "Blocking pairs: " << endl;
+        cout << "Blocking pairs: " << endl;
         print_marriage(all_blocking_pairs);
-        cout << endl << "Number of blocking pairs: " << all_blocking_pairs->size() << endl;
-        check_repetition(all_blocking_pairs);
-        marriage * new_marr = random_movement(marr,mw);
+        cout << "Number of blocking pairs: " << all_blocking_pairs->size() << endl;
+        //check_repetition(all_blocking_pairs);
+        marriage * new_marr = random_movement(all_blocking_pairs, marr);
         cout << "New marriage: " << endl;
         print_marriage(new_marr);
     }
     else{
-        cout << endl << "No new marriage";
+        cout << "No new marriage";
     }
 
     /*
