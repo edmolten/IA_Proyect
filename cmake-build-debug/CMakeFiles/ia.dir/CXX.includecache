@@ -15,6 +15,10 @@ cstring
 -
 cstdlib
 -
+climits
+-
+cmath
+-
 main.h
 /cygdrive/c/Users/eddox/Documents/GitHub/IA_Proyect/main.h
 
