@@ -13,6 +13,14 @@ char * last_char(char * string){
     return &string[strlen(string)-1];
 }
 
+void free_marriage(marriage * marr ){
+    for(marriage::iterator it = marr->begin();it != marr->end();it++){
+        delete *it;
+    }
+    marr->clear();
+    delete marr;
+}
+
 struct everyone * parse_file(const char * path){
     ifstream file;
     file.open(path);
@@ -116,6 +124,10 @@ marriage * initial_solution_2(struct everyone * mw){
         pair[W] = *woman_ite + 1;
         m->push_back(pair);
     }
+    man_indexes->clear();
+    delete man_indexes;
+    woman_indexes->clear();
+    delete woman_indexes;
     return m;
 
 }
@@ -159,6 +171,8 @@ bool is_blocking_pair(int m1, int w1, int m2, int w2, everyone * mw) {
     int *w_preferences = preference_values(w2, m1, m2, mw->w);
     bool m1_prefers_w2 = m_preferences[0] > m_preferences[1];
     bool w2_prefers_m1 = w_preferences[0] < w_preferences[1];
+    delete m_preferences;
+    delete w_preferences;
     return (m1_prefers_w2 && w2_prefers_m1);
 }
 
@@ -190,9 +204,14 @@ marriage * get_blocking_pairs_of_married(int p, int p_match, marriage *marr, int
     return blocking_pairs;
 }
 
-void add_to_list(marriage * l1, marriage * l2){
+void add_to_list_by_copy(marriage *l1, marriage *l2){
     for(marriage::iterator it = l2->begin(); it != l2->end(); it++){
-        l1->push_back(*it);
+        int m = (*it)[M];
+        int w = (*it)[W];
+        int * pair = new int[2];
+        pair[M] = m;
+        pair[W] = w;
+        l1->push_back(pair);
     }
 }
 
@@ -203,7 +222,9 @@ void blocking_pairs_from_matchs(marriage *blocking_pairs, set<int> *married_men,
         married_men->insert(m);
         int w = (*it)[W];
         married_women->insert(w);
-        add_to_list(blocking_pairs, get_blocking_pairs_of_married(m, w, marr, M, mw));
+        marriage * blocking_pairs_from_married = get_blocking_pairs_of_married(m, w, marr, M, mw);
+        add_to_list_by_copy(blocking_pairs,blocking_pairs_from_married);
+        free_marriage(blocking_pairs_from_married);
     }
 }
 
@@ -294,11 +315,32 @@ void blocking_pairs_mix_singles(set<int> *single_men, set<int> *single_women, ev
     }
 }
 
-void print_single(set<int> *singles){
+void print_singles(set<int> *singles){
     for(set<int>::iterator ite = singles->begin(); ite != singles->end(); ite++){
         cout << *ite << " ";
     }
     cout << endl;
+}
+
+unsigned long get_not_blocking_singles(set<int> * singles, int gerder, marriage * blocking_pairs){
+    unsigned long total = 0;
+    bool is_blocking_single;
+    int single;
+    for(set<int>::iterator single_it = singles->begin(); single_it != singles->end(); single_it++){
+        single = *single_it;
+        is_blocking_single = false;
+        for(marriage::iterator blocking_pair_it = blocking_pairs->begin(); blocking_pair_it != blocking_pairs->end(); blocking_pair_it++) {
+            int p = (*blocking_pair_it)[gerder];
+            if( p == single) {
+                is_blocking_single = true;
+                break;
+            }
+        }
+        if(!is_blocking_single){
+            total++;
+        }
+    }
+    return total;
 }
 
 void blocking_pairs_from_singles(marriage *blocking_pairs, set<int> *married_men, set<int> *married_women,
@@ -313,11 +355,15 @@ void blocking_pairs_from_singles(marriage *blocking_pairs, set<int> *married_men
     print_single(single_women);
     */
      if(singles_number != NULL){
-        *singles_number = single_men->size() + single_women->size();
+        *singles_number = get_not_blocking_singles(single_men, M, blocking_pairs) + get_not_blocking_singles(single_women,W,blocking_pairs);
     }
     blocking_pairs_one_side(single_men,marr,mw,blocking_pairs,M);
     blocking_pairs_one_side(single_women,marr,mw,blocking_pairs,W);
     blocking_pairs_mix_singles(single_men,single_women,mw,blocking_pairs);
+    single_men->clear();
+    delete single_men;
+    single_women->clear();
+    delete single_women;
 }
 
 marriage * get_all_blocking_pairs(marriage * marr, everyone * mw, unsigned long * singles_number) {
@@ -326,6 +372,10 @@ marriage * get_all_blocking_pairs(marriage * marr, everyone * mw, unsigned long 
     set<int> *married_women = new set<int>;
     blocking_pairs_from_matchs(blocking_pairs, married_men, married_women, marr, mw);
     blocking_pairs_from_singles(blocking_pairs,married_men,married_women,marr,mw, singles_number);
+    married_men->clear();
+    delete married_men;
+    married_women->clear();
+    delete married_women;
     return blocking_pairs;
 }
 
@@ -405,68 +455,120 @@ marriage * copy_marriage(marriage * marr ){
     return new_marriage;
 }
 
-void free_marriage(marriage * marr ){
-    for(marriage::iterator it = marr->begin();it != marr->end();it++){
-        delete *it;
-
-    }
-    marr->clear();
-}
-
-long evaluation_function(marriage * marr, everyone * mw) {
+long evaluation_function(marriage * marr, everyone * mw, unsigned long * blocking_pairs_number_out) {
     unsigned long * singles_number_p;
     unsigned long singles_number;
     singles_number_p = &singles_number;
     marriage * blocking_pairs = get_all_blocking_pairs(marr, mw,singles_number_p);
     unsigned long blocking_pairs_number = blocking_pairs->size();
-    long score = (mw->m->size()/3)*blocking_pairs_number + singles_number;
+    * blocking_pairs_number_out = blocking_pairs_number;
+    long score = blocking_pairs_number + singles_number;
     cout << "Blocking pairs number: " << blocking_pairs_number;
     cout << ", Singles number: " << singles_number;
     cout << ", Score: " << score << endl;
+    free_marriage(blocking_pairs);
     return score;
 }
 
 bool random_acept(long delta_score, double q){
-    bool acept = exp(delta_score/q) >= get_pcent();
-    if(acept){
-        cout << "Rondom acepted" << endl;
+    bool acept = false;
+    double pcent = get_pcent();
+    if(delta_score < 0) {
+        double exponent = delta_score / q;
+        double p = exp(exponent);
+        acept = p >= pcent;
+        cout << "P: " << p << ", pecent: " << pcent;
+        if (acept) {
+            cout << " -> Rondom acepted" << endl;
+        } else {
+            cout << " -> NOT Rondom acepted" << endl;
+        }
     }
     return acept;
 }
 
-int main() {
+void move_temperature(int t, double * temperature, int * last_t, int t_for_decrease) {
+    if(*last_t + t_for_decrease <= t){
+        *last_t = t;
+        *temperature = *temperature / 2;
+        cout << "TEMPERATURE HALVED----------------------------------------------" << endl;
+    }
+}
+
+marriage *  best_improvement(everyone *mw, marriage *blocking_pairs, marriage *marr, long last_score){
+    int * blocking_pair;
+    int m ;
+    int w;
+    marriage * new_marriage = NULL;
+    bool better = false;
+    long score;
+    long best_score = -LONG_MAX;
+    int best_m = -1;
+    int best_w = -1;
+    for (marriage::iterator it = blocking_pairs->begin(); it != blocking_pairs->end(); it++) {
+        blocking_pair = new int[2];
+        m = (*it)[M];
+        w = (*it)[W];
+        blocking_pair[M] = m;
+        blocking_pair[W] = w;
+        new_marriage = copy_marriage_with_breakups(marr, m, w);
+        new_marriage->push_back(blocking_pair);
+        score = evaluation_function(new_marriage,mw, NULL);
+        if(score < last_score){
+            better = true;
+            break;
+        }
+        if(score > best_score){
+            best_score = score;
+            best_m = m;
+            best_w = w;
+        }
+        free_marriage(new_marriage);
+    }
+    if (better){
+        return new_marriage;
+    }
+    else{
+        return NULL;
+/*        blocking_pair = new int[2];
+        blocking_pair[M] = best_m;
+        blocking_pair[W] = best_w;
+        new_marriage = copy_marriage_with_breakups(marr, best_m, best_w);
+        new_marriage->push_back(blocking_pair);
+        return new_marriage;*/
+    }
+}
+
+int main(int argc, char** argv) {
     srand((unsigned)time(NULL));
-    const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart1\\instance_3.txt";
+    //const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart1\\instance_3.txt";
+    //const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\minitest2";
+    const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart4\\instance_8783.txt";
     everyone * mw = parse_file(path);
     marriage * marr = initial_solution_2(mw);
     cout << "Initial marriage: ";
     print_marriage(marr);
     marriage * best_marr = copy_marriage(marr);
-    /*cout << "Marriage: " << endl;
-    print_marriage(marr);
-    marriage * all_blocking_pairs = get_all_blocking_pairs(marr,mw);
-    if(all_blocking_pairs != NULL){
-        cout << "Blocking pairs: " << endl;
-        print_marriage(all_blocking_pairs);
-        cout << "Number of blocking pairs: " << all_blocking_pairs->size() << endl;
-        //check_repetition(all_blocking_pairs);
-        marriage * new_marr = random_movement(all_blocking_pairs, marr);
-        cout << "New marriage: " << endl;
-        print_marriage(new_marr);
-    }
-    else{
-        cout << "No new marriage";
-    }*/
-    int T_MAX = 10000;
-    long best_score = evaluation_function(best_marr, mw);
+    int T_MAX = 2000;
+    long best_score = evaluation_function(best_marr, mw, NULL);
     marriage * new_marr;
     long score;
     long delta_score;
-    marriage * all_blocking_pairs;
+    marriage * all_blocking_pairs = get_all_blocking_pairs(marr,mw,NULL);
+    unsigned long initial_blocking_pairs_number = all_blocking_pairs->size();
+    double q_base = mw->m->size();//(mw->m->size()/3);
+    double q;
+    unsigned long singles;
+    bool stable_found = false;
+    unsigned long blocking_pairs_number;
     for(int t = 0; t<T_MAX; t++){
+        q = q_base* (1 -(double)t / (double)T_MAX);
         cout << "#" << t << endl;
-        all_blocking_pairs = get_all_blocking_pairs(marr,mw,NULL);
+        if(all_blocking_pairs == NULL) {
+            all_blocking_pairs = get_all_blocking_pairs(marr, mw, &singles);
+        }
         if(all_blocking_pairs->size() == 0){
+            stable_found = true;
             cout << "No blocking pairs" << endl;
             new_marr = initial_solution_2(mw);
             cout << "New random marriage: ";
@@ -475,19 +577,29 @@ int main() {
         else{
             cout << "Blocking pairs: ";
             print_marriage(all_blocking_pairs);
-            new_marr = random_movement(all_blocking_pairs, marr);
+            if(all_blocking_pairs->size() >= 0.05 * initial_blocking_pairs_number){
+                new_marr = random_movement(all_blocking_pairs, marr);
+            } else{
+                new_marr = best_improvement(mw, all_blocking_pairs, marr, score);
+                if(new_marr == NULL){
+                    new_marr = random_movement(all_blocking_pairs, marr);
+                }
+            }
             cout << "New marriage: ";
             print_marriage(new_marr);
         }
-        free_marriage(all_blocking_pairs);
-        score = evaluation_function(new_marr,mw);
+        score = evaluation_function(new_marr,mw, &blocking_pairs_number);
         delta_score = best_score - score;
         cout << "Delta score: " << delta_score << endl;
-        if(delta_score >= 0 || random_acept(delta_score, mw->m->size())){
+        if(delta_score >= 0 || random_acept(delta_score,q)){
             free_marriage(marr);
             marr = copy_marriage(new_marr);
+            free_marriage(all_blocking_pairs);
+            all_blocking_pairs = NULL;
         }
-        if(delta_score >= 0){
+        if((!stable_found && blocking_pairs_number == 0) ||
+                (!stable_found && delta_score >= 0) ||
+                (stable_found && delta_score >= 0 && blocking_pairs_number != 0)) {
             cout << "New marriage is better!" << endl;
             free_marriage(best_marr);
             best_marr = copy_marriage(marr);
@@ -496,10 +608,11 @@ int main() {
                 break;
             }
         }
-        //teperature()
     }
     cout << endl << "Best found: ";
     print_marriage(best_marr);
+    cout << "Score: " << best_score;
+    return 0;
 }
 /*
 SA
