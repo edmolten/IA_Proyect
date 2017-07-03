@@ -456,12 +456,12 @@ marriage * copy_marriage(marriage * marr ){
 }
 
 long evaluation_function(marriage * marr, everyone * mw, unsigned long * blocking_pairs_number_out) {
-    unsigned long * singles_number_p;
     unsigned long singles_number;
-    singles_number_p = &singles_number;
-    marriage * blocking_pairs = get_all_blocking_pairs(marr, mw,singles_number_p);
+    marriage * blocking_pairs = get_all_blocking_pairs(marr, mw,&singles_number);
     unsigned long blocking_pairs_number = blocking_pairs->size();
-    * blocking_pairs_number_out = blocking_pairs_number;
+    if(blocking_pairs_number_out != NULL){
+        * blocking_pairs_number_out = blocking_pairs_number;
+    }
     long score = blocking_pairs_number + singles_number;
     cout << "Blocking pairs number: " << blocking_pairs_number;
     cout << ", Singles number: " << singles_number;
@@ -485,14 +485,6 @@ bool random_acept(long delta_score, double q){
         }
     }
     return acept;
-}
-
-void move_temperature(int t, double * temperature, int * last_t, int t_for_decrease) {
-    if(*last_t + t_for_decrease <= t){
-        *last_t = t;
-        *temperature = *temperature / 2;
-        cout << "TEMPERATURE HALVED----------------------------------------------" << endl;
-    }
 }
 
 marriage *  best_improvement(everyone *mw, marriage *blocking_pairs, marriage *marr, long last_score){
@@ -554,9 +546,10 @@ int main(int argc, char** argv) {
     marriage * new_marr;
     long score;
     long delta_score;
+    long best_stable_score;
     marriage * all_blocking_pairs = get_all_blocking_pairs(marr,mw,NULL);
     unsigned long initial_blocking_pairs_number = all_blocking_pairs->size();
-    double q_base = mw->m->size();//(mw->m->size()/3);
+    double q_base = mw->m->size();
     double q;
     unsigned long singles;
     bool stable_found = false;
@@ -570,9 +563,14 @@ int main(int argc, char** argv) {
         if(all_blocking_pairs->size() == 0){
             stable_found = true;
             cout << "No blocking pairs" << endl;
-            new_marr = initial_solution_2(mw);
+            marr = initial_solution_2(mw);
+            best_stable_score = best_score;
+            best_score = evaluation_function(marr,mw,NULL);
             cout << "New random marriage: ";
-            print_marriage(new_marr);
+            print_marriage(marr);
+            free_marriage(all_blocking_pairs);
+            all_blocking_pairs = NULL;
+            continue;
         }
         else{
             cout << "Blocking pairs: ";
@@ -599,7 +597,7 @@ int main(int argc, char** argv) {
         }
         if((!stable_found && blocking_pairs_number == 0) ||
                 (!stable_found && delta_score >= 0) ||
-                (stable_found && delta_score >= 0 && blocking_pairs_number != 0)) {
+                (stable_found && blocking_pairs_number == 0 && best_score < best_stable_score)) {
             cout << "New marriage is better!" << endl;
             free_marriage(best_marr);
             best_marr = copy_marriage(marr);
