@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
@@ -10,7 +9,8 @@
 using namespace std;
 
 char * last_char(char * string){
-    return &string[strlen(string)-1];
+    size_t index = strlen(string)-1;
+    return &string[index];
 }
 
 void free_marriage(marriage * marr ){
@@ -82,24 +82,6 @@ double get_pcent() {
     return (double)rand() / (double)RAND_MAX ;
 }
 
-marriage * initial_solution(struct everyone * mw){
-    unsigned long size = mw->m->size();
-    set<int> indexes;
-    marriage * m = new marriage;
-    while(indexes.size() != size / 2){
-        double pcent = get_pcent();
-        int n = (int)(pcent * size);
-        indexes.insert(n);
-    }
-    for(set<int>::iterator ite = indexes.begin(); ite != indexes.end(); ite++){
-        int * pair = new int[2];
-        pair[M] = *ite + 1;
-        pair[W] = *ite + 1;
-        m->push_back(pair);
-    }
-    return m;
-}
-
 set<int> * get_random_indexes(struct everyone *mw){
     set<int> * indexes = new set<int>();
     unsigned long size = mw->m->size();
@@ -111,7 +93,7 @@ set<int> * get_random_indexes(struct everyone *mw){
     return  indexes;
 }
 
-marriage * initial_solution_2(struct everyone * mw){
+marriage * initial_random_marriage(struct everyone *mw){
     set<int> * woman_indexes = get_random_indexes(mw);
     set<int> * man_indexes = get_random_indexes(mw);
     marriage * m = new marriage;
@@ -494,9 +476,6 @@ marriage *  best_improvement(everyone *mw, marriage *blocking_pairs, marriage *m
     marriage * new_marriage = NULL;
     bool better = false;
     long score;
-    long best_score = -LONG_MAX;
-    int best_m = -1;
-    int best_w = -1;
     for (marriage::iterator it = blocking_pairs->begin(); it != blocking_pairs->end(); it++) {
         blocking_pair = new int[2];
         m = (*it)[M];
@@ -510,11 +489,6 @@ marriage *  best_improvement(everyone *mw, marriage *blocking_pairs, marriage *m
             better = true;
             break;
         }
-        if(score > best_score){
-            best_score = score;
-            best_m = m;
-            best_w = w;
-        }
         free_marriage(new_marriage);
     }
     if (better){
@@ -522,12 +496,6 @@ marriage *  best_improvement(everyone *mw, marriage *blocking_pairs, marriage *m
     }
     else{
         return NULL;
-/*        blocking_pair = new int[2];
-        blocking_pair[M] = best_m;
-        blocking_pair[W] = best_w;
-        new_marriage = copy_marriage_with_breakups(marr, best_m, best_w);
-        new_marriage->push_back(blocking_pair);
-        return new_marriage;*/
     }
 }
 
@@ -535,13 +503,15 @@ int main(int argc, char** argv) {
     srand((unsigned)time(NULL));
     //const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart1\\instance_3.txt";
     //const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\minitest2";
-    const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart4\\instance_8783.txt";
+    //const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart4\\instance_8824.txt";
+    const char * path = argv[1];
     everyone * mw = parse_file(path);
-    marriage * marr = initial_solution_2(mw);
+    marriage * marr = initial_random_marriage(mw);
     cout << "Initial marriage: ";
     print_marriage(marr);
     marriage * best_marr = copy_marriage(marr);
-    int T_MAX = 2000;
+    //int T_MAX = 500;
+    int T_MAX = atoi(argv[2]);
     long best_score = evaluation_function(best_marr, mw, NULL);
     marriage * new_marr;
     long score;
@@ -554,18 +524,28 @@ int main(int argc, char** argv) {
     unsigned long singles;
     bool stable_found = false;
     unsigned long blocking_pairs_number;
-    for(int t = 0; t<T_MAX; t++){
-        q = q_base* (1 -(double)t / (double)T_MAX);
+    marriage * best_stable_marriage = NULL;
+    int t_limit = T_MAX;
+    int t;
+    for(t = 0; t<T_MAX; t++){
+        q = q_base* (1 -(double)t / (double)t_limit);
         cout << "#" << t << endl;
         if(all_blocking_pairs == NULL) {
             all_blocking_pairs = get_all_blocking_pairs(marr, mw, &singles);
         }
         if(all_blocking_pairs->size() == 0){
-            stable_found = true;
             cout << "No blocking pairs" << endl;
-            marr = initial_solution_2(mw);
-            best_stable_score = best_score;
+            // save stability
+            stable_found = true;
+            best_stable_score = best_score < best_stable_score ? best_score : best_stable_score;
+            best_stable_marriage = copy_marriage(best_marr);
+            if(best_score == 0){
+                break;
+            }
+            // restart
+            marr = initial_random_marriage(mw);
             best_score = evaluation_function(marr,mw,NULL);
+            t_limit = t;
             cout << "New random marriage: ";
             print_marriage(marr);
             free_marriage(all_blocking_pairs);
@@ -597,48 +577,34 @@ int main(int argc, char** argv) {
         }
         if((!stable_found && blocking_pairs_number == 0) ||
                 (!stable_found && delta_score >= 0) ||
-                (stable_found && blocking_pairs_number == 0 && best_score < best_stable_score)) {
+                (stable_found && blocking_pairs_number == 0 && score < best_stable_score)) {
             cout << "New marriage is better!" << endl;
             free_marriage(best_marr);
             best_marr = copy_marriage(marr);
             best_score = score;
-            if(best_score == 0){
-                break;
-            }
+
         }
     }
-    cout << endl << "Best found: ";
+    if(stable_found) {
+        cout << best_stable_marriage->size() << " parejas encontradas" << endl;
+        cout << t << " iteraciones realizadas" << endl;
+        if(best_score == 0){
+            cout << "optimo"<< endl;
+        }
+        else{
+            cout << "no_optimo"<< endl;
+        }
+        cout << "estable" << endl;
+    }
+    else{
+        cout << best_marr->size() << " parejas encontradas" << endl;
+        cout << t << " iteraciones realizadas" << endl;
+        cout << "no_optimo" << endl;
+        cout << "no_estable" << endl;
+    }
+    /*cout << endl << "Best found: ";
     print_marriage(best_marr);
     cout << "Score: " << best_score;
+    */
     return 0;
 }
-/*
-SA
-
- init:
- X = initial solution
- tmax = max iterations
- q = initial temperature
- B = X (best solution)
- n = 0 number of solution
-
- if (t == max){
-    break;
- }
- if(no_posible_movement(X)){
-    X = random
- }
- else{
-    nueva X = random_movement(X)
- }
- calculate_delta(X)
- if(is_better || random_acept){
-    X = nueva X
- }
- else continue;
- if(is better){
-    B = X
- }
- try_reduce_temperatue
- t = t+1
- */
