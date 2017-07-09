@@ -8,11 +8,13 @@
 
 using namespace std;
 
+// Gets the last character of a string
 char * last_char(char * string){
     size_t index = strlen(string)-1;
     return &string[index];
 }
 
+// Frees all memory allocated in the marriage
 void free_marriage(marriage * marr ){
     for(marriage::iterator it = marr->begin();it != marr->end();it++){
         delete *it;
@@ -21,6 +23,7 @@ void free_marriage(marriage * marr ){
     delete marr;
 }
 
+// Parses file and fill the everyone structure
 struct everyone * parse_file(const char * path){
     ifstream file;
     file.open(path);
@@ -33,18 +36,19 @@ struct everyone * parse_file(const char * path){
     while (file >> word) {
         if (strcmp(":", last_char(word)) == 0) {
             current_side->push_back(pref_list);
+            // if another "1:" is read, change side. Line jump is irrelevant
             if (strcmp("1:", word) == 0) {
                 current_side = women;
             }
             pref_list = new preference_list;
-        } else if (strcmp(word,"(") == 0 ) {
+        } else if (strcmp(word,"(") == 0 ) { //tie slot
             preference *pref = new preference;
             while (file >> word) {
                 if (strcmp(word,")") == 0 ) break;
                 pref->insert(atoi(word));
             }
             pref_list->push_back(pref);
-        } else {
+        } else { //single preference slot
             preference *pref = new preference;
             pref->insert(atoi(word));
             pref_list->push_back(pref);
@@ -57,6 +61,7 @@ struct everyone * parse_file(const char * path){
     return mw;
 }
 
+// Prints one side in a similar way as the file, but the single preferences are between parenthesis too
 void print_side(side * s){
     int i = 1;
     for (side::iterator it_side = s->begin(); it_side != s->end(); it_side++){
@@ -73,15 +78,19 @@ void print_side(side * s){
     }
 }
 
+// Prints both sides
 void print_all(struct everyone * mw){
     print_side(mw->m);
     print_side(mw->w);
 }
 
+// Gets a random number between 0 and 1
 double get_pcent() {
     return (double)rand() / (double)RAND_MAX ;
 }
 
+// Gets a set of random integers from 0 to the size of one side
+// The size is the same as one side
 set<int> * get_random_indexes(struct everyone *mw){
     set<int> * indexes = new set<int>();
     unsigned long size = mw->m->size();
@@ -93,6 +102,7 @@ set<int> * get_random_indexes(struct everyone *mw){
     return  indexes;
 }
 
+// Generates a random marriage of side equal to one side
 marriage * initial_random_marriage(struct everyone *mw){
     set<int> * woman_indexes = get_random_indexes(mw);
     set<int> * man_indexes = get_random_indexes(mw);
@@ -114,6 +124,8 @@ marriage * initial_random_marriage(struct everyone *mw){
 
 }
 
+// Returns the preference position of p for match1 and for match2 in p_side,
+// in an array of two ints. Greater numbers means less preference
 int * preference_values(int p, int match1, int match2, side * p_side){
     int i = 1;
     int * values = new int[2];
@@ -148,6 +160,7 @@ int * preference_values(int p, int match1, int match2, side * p_side){
     return values;
 }
 
+// Returns if (m1,w2) is blocking pair. w1 is m1 match and m2 is w2 match.
 bool is_blocking_pair(int m1, int w1, int m2, int w2, everyone * mw) {
     int *m_preferences = preference_values(m1, w1, w2, mw->m);
     int *w_preferences = preference_values(w2, m1, m2, mw->w);
@@ -158,6 +171,7 @@ bool is_blocking_pair(int m1, int w1, int m2, int w2, everyone * mw) {
     return (m1_prefers_w2 && w2_prefers_m1);
 }
 
+// Get all blocking pairs related with match (p, p_match) (or (p_match, p) depending of p_gerder)
 marriage * get_blocking_pairs_of_married(int p, int p_match, marriage *marr, int p_gerder, everyone *mw) {
     marriage * blocking_pairs = new marriage;
     for (marriage::iterator pair = marr->begin(); pair != marr->end(); pair++){
@@ -186,6 +200,7 @@ marriage * get_blocking_pairs_of_married(int p, int p_match, marriage *marr, int
     return blocking_pairs;
 }
 
+// Copy and appends elements of l2 to l1
 void add_to_list_by_copy(marriage *l1, marriage *l2){
     for(marriage::iterator it = l2->begin(); it != l2->end(); it++){
         int m = (*it)[M];
@@ -197,6 +212,8 @@ void add_to_list_by_copy(marriage *l1, marriage *l2){
     }
 }
 
+// Gets all the blocking pairs obtained from checking all the matches in marr, and appends them to blocking_pairs.
+// Also stores the married men and women in married_men and married_women respectively
 void blocking_pairs_from_matchs(marriage *blocking_pairs, set<int> *married_men, set<int> *married_women,
                                 marriage *marr, everyone *mw) {
     for (marriage::iterator it = marr->begin(); it != marr->end(); it++) {
@@ -210,6 +227,8 @@ void blocking_pairs_from_matchs(marriage *blocking_pairs, set<int> *married_men,
     }
 }
 
+// Returns a set with all the singles, based on the size of one side and a set with all the currently engaged
+// ones of one gerder,
 set<int> * get_singles(set<int> * married, unsigned long size){
     set<int> * singles = new set<int>;
     set<int>::iterator it = married->begin();
@@ -223,6 +242,7 @@ set<int> * get_singles(set<int> * married, unsigned long size){
     return singles;
 }
 
+// Returns whether a match between p and p2 is factible
 bool acepts(int p, int p2, side *p_side) {
     int i = 0;
     for (side::iterator it_side = p_side->begin(); it_side != p_side->end(); it_side++){
@@ -240,6 +260,7 @@ bool acepts(int p, int p2, side *p_side) {
     return false;
 }
 
+// Returns whether (p, single) (or (single, p) depending on p_gerder) is a blocking pair, knowing  p's match
 bool is_single_blocking_pair(int p, int p_match, int single, int p_gerder, everyone * mw){
     int * p_preferences;
     bool single_acepts_p;
@@ -255,6 +276,7 @@ bool is_single_blocking_pair(int p, int p_match, int single, int p_gerder, every
     return p_prefers_single && single_acepts_p;
 }
 
+// Gets all blocking pairs related with singles, of gerder single_gerder, in marr, and appends them to blocking_pairs
 void blocking_pairs_one_side(set<int> * singles, marriage *marr, everyone *mw, marriage *blocking_pairs, int single_gerder) {
     for(set<int>::iterator it = singles->begin(); it != singles->end(); it++) {
         for(marriage::iterator it2 = marr->begin(); it2 != marr->end(); it2++) {
@@ -280,6 +302,7 @@ void blocking_pairs_one_side(set<int> * singles, marriage *marr, everyone *mw, m
     }
 }
 
+// Gets all the blocking pairs related to all singles in both sides by checking just their mutual acceptance
 void blocking_pairs_mix_singles(set<int> *single_men, set<int> *single_women, everyone *mw, marriage * blocking_pairs) {
     for(set<int>::iterator men_it = single_men->begin(); men_it != single_men->end();men_it++) {
         for(set<int>::iterator women_it = single_women->begin(); women_it != single_women->end();women_it++) {
@@ -297,6 +320,7 @@ void blocking_pairs_mix_singles(set<int> *single_men, set<int> *single_women, ev
     }
 }
 
+// Prints the set
 void print_singles(set<int> *singles){
     for(set<int>::iterator ite = singles->begin(); ite != singles->end(); ite++){
         cout << *ite << " ";
@@ -304,6 +328,7 @@ void print_singles(set<int> *singles){
     cout << endl;
 }
 
+// Gets the number of singles in singles, of gerder gerder, that don't participate in an blocking pair in blocking_pairs
 unsigned long get_not_blocking_singles(set<int> * singles, int gerder, marriage * blocking_pairs){
     unsigned long total = 0;
     bool is_blocking_single;
@@ -325,6 +350,7 @@ unsigned long get_not_blocking_singles(set<int> * singles, int gerder, marriage 
     return total;
 }
 
+// Gets all the blocking pairs related to the sinlges in marr.
 void blocking_pairs_from_singles(marriage *blocking_pairs, set<int> *married_men, set<int> *married_women,
                                  marriage *marr, everyone *mw, unsigned long * singles_number) {
     unsigned long size = mw->m->size();
@@ -501,16 +527,12 @@ marriage *  best_improvement(everyone *mw, marriage *blocking_pairs, marriage *m
 
 int main(int argc, char** argv) {
     srand((unsigned)time(NULL));
-    //const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart1\\instance_3.txt";
-    //const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\minitest2";
-    //const char * path = "C:\\Users\\eddox\\Documents\\GitHub\\IA_Proyect\\IA\\instances\\Chart4\\instance_8824.txt";
     const char * path = argv[1];
     everyone * mw = parse_file(path);
     marriage * marr = initial_random_marriage(mw);
     cout << "Initial marriage: ";
     print_marriage(marr);
     marriage * best_marr = copy_marriage(marr);
-    //int T_MAX = 500;
     int T_MAX = atoi(argv[2]);
     long best_score = evaluation_function(best_marr, mw, NULL);
     marriage * new_marr;
