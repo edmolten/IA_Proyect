@@ -102,7 +102,7 @@ set<int> * get_random_indexes(struct everyone *mw){
     return  indexes;
 }
 
-// Generates a random marriage of side equal to one side
+// Generates a random marriage of lenght equal to one side
 marriage * initial_random_marriage(struct everyone *mw){
     set<int> * woman_indexes = get_random_indexes(mw);
     set<int> * man_indexes = get_random_indexes(mw);
