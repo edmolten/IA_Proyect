@@ -356,12 +356,6 @@ void blocking_pairs_from_singles(marriage *blocking_pairs, set<int> *married_men
     unsigned long size = mw->m->size();
     set<int> * single_men = get_singles(married_men,size);
     set<int> * single_women = get_singles(married_women,size);
-    /*
-    cout << "Single men: ";
-    print_single(single_men);
-    cout << "Single women: ";
-    print_single(single_women);
-    */
      if(singles_number != NULL){
         *singles_number = get_not_blocking_singles(single_men, M, blocking_pairs) + get_not_blocking_singles(single_women,W,blocking_pairs);
     }
@@ -417,7 +411,7 @@ marriage * random_movement(marriage * blocking_pairs, marriage * marr){
             w = (*it)[W];
             blocking_pair[M] = m;
             blocking_pair[W] = w;
-            cout << "Randomly selected blocking pair: (" << m << " , " << w << ")" << endl;
+            //cout << "Randomly selected blocking pair: (" << m << " , " << w << ")" << endl;
             new_marriage = copy_marriage_with_breakups(marr, m, w);
             new_marriage->push_back(blocking_pair);
             break;
@@ -429,9 +423,9 @@ marriage * random_movement(marriage * blocking_pairs, marriage * marr){
 
 void print_marriage(marriage * marr){
     for(marriage::iterator it = marr->begin();it != marr->end();it++) {
-        cout << "(" << (*it)[0] << " , " << (*it)[1] << ") ";
+        //cout << "(" << (*it)[0] << " , " << (*it)[1] << ") ";
     }
-    cout << endl;
+    //cout << endl;
 }
 
 void check_repetition(marriage * marr){
@@ -446,7 +440,7 @@ void check_repetition(marriage * marr){
                 i++;
             }
         }
-        cout<< i << " ";
+        //cout<< i << " ";
     }
 }
 
@@ -471,9 +465,9 @@ long evaluation_function(marriage * marr, everyone * mw, unsigned long * blockin
         * blocking_pairs_number_out = blocking_pairs_number;
     }
     long score = blocking_pairs_number + singles_number;
-    cout << "Blocking pairs number: " << blocking_pairs_number;
-    cout << ", Singles number: " << singles_number;
-    cout << ", Score: " << score << endl;
+    //cout << "Blocking pairs number: " << blocking_pairs_number;
+    //cout << ", Singles number: " << singles_number;
+    //cout << ", Score: " << score << endl;
     free_marriage(blocking_pairs);
     return score;
 }
@@ -485,11 +479,11 @@ bool random_acept(long delta_score, double q){
         double exponent = delta_score / q;
         double p = exp(exponent);
         acept = p >= pcent;
-        cout << "P: " << p << ", pecent: " << pcent;
+        //cout << "P: " << p << ", pecent: " << pcent;
         if (acept) {
-            cout << " -> Rondom acepted" << endl;
+            //cout << " -> Rondom acepted" << endl;
         } else {
-            cout << " -> NOT Rondom acepted" << endl;
+            //cout << " -> NOT Rondom acepted" << endl;
         }
     }
     return acept;
@@ -530,7 +524,7 @@ int main(int argc, char** argv) {
     const char * path = argv[1];
     everyone * mw = parse_file(path);
     marriage * marr = initial_random_marriage(mw);
-    cout << "Initial marriage: ";
+    //cout << "Initial marriage: ";
     print_marriage(marr);
     marriage * best_marr = copy_marriage(marr);
     int T_MAX = atoi(argv[2]);
@@ -551,12 +545,12 @@ int main(int argc, char** argv) {
     int t;
     for(t = 0; t<T_MAX; t++){
         q = q_base* (1 -(double)t / (double)t_limit);
-        cout << "#" << t << endl;
+        //cout << "#" << t << endl;
         if(all_blocking_pairs == NULL) {
             all_blocking_pairs = get_all_blocking_pairs(marr, mw, &singles);
         }
         if(all_blocking_pairs->size() == 0){
-            cout << "No blocking pairs" << endl;
+            //cout << "No blocking pairs" << endl;
             // save stability
             stable_found = true;
             best_stable_score = best_score < best_stable_score ? best_score : best_stable_score;
@@ -568,14 +562,14 @@ int main(int argc, char** argv) {
             marr = initial_random_marriage(mw);
             best_score = evaluation_function(marr,mw,NULL);
             t_limit = t;
-            cout << "New random marriage: ";
+            //cout << "New random marriage: ";
             print_marriage(marr);
             free_marriage(all_blocking_pairs);
             all_blocking_pairs = NULL;
             continue;
         }
         else{
-            cout << "Blocking pairs: ";
+            //cout << "Blocking pairs: ";
             print_marriage(all_blocking_pairs);
             if(all_blocking_pairs->size() >= 0.05 * initial_blocking_pairs_number){
                 new_marr = random_movement(all_blocking_pairs, marr);
@@ -585,12 +579,12 @@ int main(int argc, char** argv) {
                     new_marr = random_movement(all_blocking_pairs, marr);
                 }
             }
-            cout << "New marriage: ";
-            print_marriage(new_marr);
+            //cout << "New marriage: ";
+            //print_marriage(new_marr);
         }
         score = evaluation_function(new_marr,mw, &blocking_pairs_number);
         delta_score = best_score - score;
-        cout << "Delta score: " << delta_score << endl;
+        //cout << "Delta score: " << delta_score << endl;
         if(delta_score >= 0 || random_acept(delta_score,q)){
             free_marriage(marr);
             marr = copy_marriage(new_marr);
@@ -600,7 +594,7 @@ int main(int argc, char** argv) {
         if((!stable_found && blocking_pairs_number == 0) ||
                 (!stable_found && delta_score >= 0) ||
                 (stable_found && blocking_pairs_number == 0 && score < best_stable_score)) {
-            cout << "New marriage is better!" << endl;
+            //cout << "New marriage is better!" << endl;
             free_marriage(best_marr);
             best_marr = copy_marriage(marr);
             best_score = score;
@@ -624,9 +618,5 @@ int main(int argc, char** argv) {
         cout << "no_optimo" << endl;
         cout << "no_estable" << endl;
     }
-    /*cout << endl << "Best found: ";
-    print_marriage(best_marr);
-    cout << "Score: " << best_score;
-    */
     return 0;
 }
