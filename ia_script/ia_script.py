@@ -3,9 +3,9 @@ from os import walk
 INSTANCES_PATH = "/home/edmolten/IA_Proyect/IA/instances"
 PROGRAM_PATH = "/home/edmolten/IA_Proyect/main"
 ITERATIONS_CATEGORY_NAME = [
-    #(3000, 1000, "Chart1"),
-    #(1000, 1000, "Chart4"),
-    #(100, 50, "Chart16"),
+    (3000, 1000, "Chart1"),
+    (1000, 1000, "Chart4"),
+    (100, 50, "Chart16"),
     (100, 50, "Chart17"),
     (100, 50, "Chart18")
 ]
