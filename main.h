@@ -18,7 +18,7 @@ typedef list<preference_list*> side;
 // A marriage is a list of pairs, represented by two integers. A set of blocking pairs
 // is also represented with this structure
 typedef list<int*> marriage;
-// structure to manipulate the two sides
+// structure to manipulate the two general lists (sides)
 struct everyone {
     side * m;
     side * w;

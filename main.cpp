@@ -8,6 +8,8 @@
 
 using namespace std;
 
+// ALL THE DEBUG PRINTS ARE COMMENTED OUT. UNCOMMENT FOR VERBOSE OUTPUT (REALLY LONG)
+
 // Gets the last character of a string
 char * last_char(char * string){
     size_t index = strlen(string)-1;
@@ -41,7 +43,7 @@ struct everyone * parse_file(const char * path){
                 current_side = women;
             }
             pref_list = new preference_list;
-        } else if (strcmp(word,"(") == 0 ) { //tie slot
+        } else if (strcmp(word,"(") == 0 ) { //tie slot, begin sub iterations
             preference *pref = new preference;
             while (file >> word) {
                 if (strcmp(word,")") == 0 ) break;
@@ -350,7 +352,7 @@ unsigned long get_not_blocking_singles(set<int> * singles, int gerder, marriage 
     return total;
 }
 
-// Gets all the blocking pairs related to the sinlges in marr.
+// Gets all the blocking pairs related to the sinlges in marr. Optionally stores the number of singles in single_number
 void blocking_pairs_from_singles(marriage *blocking_pairs, set<int> *married_men, set<int> *married_women,
                                  marriage *marr, everyone *mw, unsigned long * singles_number) {
     unsigned long size = mw->m->size();
@@ -368,6 +370,7 @@ void blocking_pairs_from_singles(marriage *blocking_pairs, set<int> *married_men
     delete single_women;
 }
 
+// Gets all locking pairs of marr
 marriage * get_all_blocking_pairs(marriage * marr, everyone * mw, unsigned long * singles_number) {
     marriage *blocking_pairs = new marriage;
     set<int> *married_men = new set<int>;
@@ -381,6 +384,7 @@ marriage * get_all_blocking_pairs(marriage * marr, everyone * mw, unsigned long 
     return blocking_pairs;
 }
 
+//Copy marrige marr, without (m, w) match
 marriage * copy_marriage_with_breakups(marriage *marr, int m, int w){
     marriage * new_marriage = new marriage;
     for(marriage::iterator it = marr->begin();it != marr->end();it++){
@@ -396,6 +400,7 @@ marriage * copy_marriage_with_breakups(marriage *marr, int m, int w){
     return new_marriage;
 }
 
+//Performs the movement by eliminating a random blocking pair of blocking_pairs from marr
 marriage * random_movement(marriage * blocking_pairs, marriage * marr){
     unsigned long size = blocking_pairs->size();
     double pcent = get_pcent();
@@ -421,6 +426,7 @@ marriage * random_movement(marriage * blocking_pairs, marriage * marr){
     return  new_marriage;
 }
 
+// Prints the marriage
 void print_marriage(marriage * marr){
     for(marriage::iterator it = marr->begin();it != marr->end();it++) {
         //cout << "(" << (*it)[0] << " , " << (*it)[1] << ") ";
@@ -428,6 +434,7 @@ void print_marriage(marriage * marr){
     //cout << endl;
 }
 
+// Check if there is a duplicated pair in marr
 void check_repetition(marriage * marr){
     for(marriage::iterator it = marr->begin();it != marr->end();it++){
         int i = 0;
@@ -444,6 +451,7 @@ void check_repetition(marriage * marr){
     }
 }
 
+// Copy the marriage
 marriage * copy_marriage(marriage * marr ){
     marriage * new_marriage = new marriage;
     for(marriage::iterator it = marr->begin();it != marr->end();it++){
@@ -457,6 +465,7 @@ marriage * copy_marriage(marriage * marr ){
     return new_marriage;
 }
 
+// Sums the number of singles and the number of blocking pairs in marr
 long evaluation_function(marriage * marr, everyone * mw, unsigned long * blocking_pairs_number_out) {
     unsigned long singles_number;
     marriage * blocking_pairs = get_all_blocking_pairs(marr, mw,&singles_number);
@@ -472,6 +481,7 @@ long evaluation_function(marriage * marr, everyone * mw, unsigned long * blockin
     return score;
 }
 
+// Returns true or false randomply depending on temperature q and delta_score
 bool random_acept(long delta_score, double q){
     bool acept = false;
     double pcent = get_pcent();
@@ -489,6 +499,7 @@ bool random_acept(long delta_score, double q){
     return acept;
 }
 
+// Performs the movement by eliminating the blocking pair of blocking_pairs from marr that generates the best score marriage
 marriage *  best_improvement(everyone *mw, marriage *blocking_pairs, marriage *marr, long last_score){
     int * blocking_pair;
     int m ;
@@ -519,6 +530,8 @@ marriage *  best_improvement(everyone *mw, marriage *blocking_pairs, marriage *m
     }
 }
 
+// The algorithm itself. The seudoalgorithm shown in the paper is almost equal to this but without
+// memory and parameters stuff.
 int main(int argc, char** argv) {
     srand((unsigned)time(NULL));
     const char * path = argv[1];
@@ -571,6 +584,7 @@ int main(int argc, char** argv) {
         else{
             //cout << "Blocking pairs: ";
             print_marriage(all_blocking_pairs);
+            // check for 5% of the process done
             if(all_blocking_pairs->size() >= 0.05 * initial_blocking_pairs_number){
                 new_marr = random_movement(all_blocking_pairs, marr);
             } else{
@@ -601,6 +615,7 @@ int main(int argc, char** argv) {
 
         }
     }
+    // Done, print the result
     if(stable_found) {
         cout << best_stable_marriage->size() << " parejas encontradas" << endl;
         cout << t << " iteraciones realizadas" << endl;
