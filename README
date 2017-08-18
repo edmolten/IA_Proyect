@@ -1,0 +1,23 @@
+Solucion a MAX SMTI
+Inteligencia Artificial
+2017-1
+UTFSM Casa Central
+
+Eduardo Vicente Ramirez Farias
+
+Implementacion: C++ 98
+
+Compilacion: make
+
+Limpieza de binarios: make clean
+
+Ejecución: main path iterations
+Donde path es la ruta al archivo de datos e iterations es la cantidad de iteraciones
+
+Testing: python3 ia_script/ia_script.py
+Necesita Python 3.4 para esto. Cambie las constantes INSTANCES_PATH, PROGRAM_PATH y ITERATIONS_CATEGORY_NAME segun
+corresponda, siguiendo las instrucciones comentadas. El script trabaja sobre las categorias provistas por la ayudante.
+Solo funciona en Linux.
+
+WARNING: La ejecucion de script python completo podria tomar dias.
+
